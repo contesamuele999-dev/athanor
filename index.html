@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Athanor — Laboratorio di Trasformazione Interiore</title>
+<!-- Supabase JS client (auth + database) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ============================================================
+   ATHANOR — Design System
+   Palette: nero antracite, blu notte, oro tenue, bianco caldo, grigio pietra
+   ============================================================ */
+:root{
+  --antracite:#15181d;
+  --antracite-2:#1c2027;
+  --notte:#10182b;
+  --notte-2:#0b1120;
+  --oro:#c9a35b;
+  --oro-soft:#d9bd84;
+  --oro-deep:#a4823f;
+  --bianco:#f4efe6;
+  --bianco-dim:#cfc8ba;
+  --pietra:#7c8088;
+  --pietra-dim:#4a4f57;
+  --line:rgba(201,163,91,.16);
+  --line-soft:rgba(244,239,230,.07);
+  --glass:rgba(255,255,255,.035);
+  --glass-2:rgba(255,255,255,.055);
+  --shadow:0 18px 50px rgba(0,0,0,.45);
+  --r:22px;
+  --r-sm:16px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:var(--sans);
+  background:#05070c;
+  color:var(--bianco);
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;
+  overflow:hidden;
+  letter-spacing:.2px;
+}
+/* phone frame */
+#device{
+  position:relative;
+  width:430px;height:920px;max-width:100vw;max-height:100vh;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #1a2235 0%, transparent 55%),
+    linear-gradient(180deg,var(--antracite) 0%, var(--notte-2) 100%);
+  border-radius:46px;
+  overflow:hidden;
+  box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.05);
+}
+@media(max-width:480px){#device{width:100vw;height:100vh;border-radius:0}}
+@media(min-width:768px) and (max-height:940px){#device{height:96vh}}
+
+/* faint geometric backdrop */
+#device::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(circle at 50% 22%, rgba(201,163,91,.06), transparent 38%),
+    radial-gradient(circle at 85% 90%, rgba(40,70,130,.18), transparent 45%);
+}
+.alch-bg{
+  position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:520px;height:520px;opacity:.05;z-index:0;pointer-events:none;
+  animation:spin 120s linear infinite;
+}
+@keyframes spin{to{transform:translateX(-50%) rotate(360deg)}}
+
+/* status bar */
+.statusbar{
+  position:relative;z-index:5;height:46px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;font-size:13px;font-weight:600;color:var(--bianco-dim);
+}
+.statusbar .dots{display:flex;gap:5px;align-items:center}
+.statusbar .dots span{width:5px;height:5px;border-radius:50%;background:var(--bianco-dim);opacity:.55}
+
+/* screens */
+#viewport{position:relative;z-index:2;height:calc(100% - 46px - 76px);overflow:hidden}
+.screen{
+  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  padding:6px 22px 40px;
+  opacity:0;transform:translateY(14px);pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  scrollbar-width:none;
+}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{opacity:1;transform:none;pointer-events:auto}
+.screen.no-pad{padding:0}
+
+/* typography */
+.eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--oro);font-weight:600}
+h1.title{font-family:var(--serif);font-weight:500;font-size:31px;line-height:1.12;margin:8px 0 4px}
+h2.section{font-family:var(--serif);font-weight:500;font-size:21px;margin:0 0 14px}
+.muted{color:var(--pietra);font-size:14px;line-height:1.55}
+.lede{color:var(--bianco-dim);font-size:15px;line-height:1.6}
+
+/* cards */
+.card{
+  background:var(--glass);
+  border:1px solid var(--line-soft);
+  border-radius:var(--r);
+  padding:20px;
+  backdrop-filter:blur(8px);
+  position:relative;overflow:hidden;
+}
+.card.gold{border-color:var(--line);
+  background:linear-gradient(155deg, rgba(201,163,91,.10), rgba(255,255,255,.02));}
+.card+.card{margin-top:14px}
+
+/* buttons */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:16px;border:none;border-radius:16px;cursor:pointer;
+  font-family:var(--sans);font-size:15.5px;font-weight:600;letter-spacing:.3px;
+  background:linear-gradient(120deg,var(--oro),var(--oro-deep));
+  color:#1a1407;
+  transition:transform .25s var(--ease), box-shadow .25s var(--ease), filter .25s;
+  box-shadow:0 10px 26px rgba(201,163,91,.22);
+}
+.btn:active{transform:scale(.975)}
+.btn.ghost{background:var(--glass-2);color:var(--bianco);box-shadow:none;border:1px solid var(--line)}
+.btn.ghost:hover{background:rgba(255,255,255,.08)}
+.btn:disabled{filter:grayscale(.6) brightness(.7);box-shadow:none;cursor:default}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{
+  padding:11px 16px;border-radius:40px;border:1px solid var(--line-soft);
+  background:var(--glass);font-size:14px;color:var(--bianco-dim);cursor:pointer;
+  transition:all .25s var(--ease);user-select:none;
+}
+.chip:hover{border-color:var(--line)}
+.chip.sel{background:linear-gradient(120deg,rgba(201,163,91,.22),rgba(201,163,91,.08));
+  border-color:var(--oro);color:var(--bianco);box-shadow:0 6px 18px rgba(201,163,91,.18)}
+
+/* progress ring + bars */
+.opera-bar{height:9px;border-radius:20px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
+.opera-bar > i{position:absolute;left:0;top:0;bottom:0;border-radius:20px;
+  background:linear-gradient(90deg,var(--oro-deep),var(--oro-soft));
+  box-shadow:0 0 14px rgba(201,163,91,.5);transition:width 1s var(--ease)}
+
+/* bottom nav */
+#nav{
+  position:absolute;left:0;right:0;bottom:0;z-index:6;height:76px;
+  display:flex;align-items:center;justify-content:space-around;padding:0 8px 6px;
+  background:linear-gradient(180deg,rgba(11,17,32,0),rgba(8,11,20,.92) 38%);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--line-soft);
+}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;
+  color:var(--pietra);font-size:10px;letter-spacing:.4px;flex:1;padding-top:10px;transition:color .3s}
+.nav-item svg{width:23px;height:23px;stroke:var(--pietra);fill:none;stroke-width:1.5;transition:all .3s}
+.nav-item.active{color:var(--oro)}
+.nav-item.active svg{stroke:var(--oro);filter:drop-shadow(0 0 8px rgba(201,163,91,.45))}
+
+/* timeline */
+.tl{position:relative;padding-left:26px;margin-top:8px}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:1px;
+  background:linear-gradient(var(--oro),transparent)}
+.tl-item{position:relative;margin-bottom:16px}
+.tl-item::before{content:"";position:absolute;left:-23px;top:6px;width:10px;height:10px;border-radius:50%;
+  background:var(--notte);border:2px solid var(--oro);box-shadow:0 0 10px rgba(201,163,91,.5)}
+
+/* emotion tag colors */
+.etag{font-size:11px;padding:3px 10px;border-radius:30px;font-weight:600;letter-spacing:.4px}
+.e-rabbia{background:rgba(190,70,60,.18);color:#e79b92}
+.e-paura{background:rgba(120,90,160,.2);color:#c2a8e0}
+.e-tristezza{background:rgba(70,110,170,.2);color:#9bb8e6}
+.e-vergogna{background:rgba(150,90,120,.2);color:#e0a4c2}
+.e-gioia{background:rgba(201,163,91,.22);color:#e7c987}
+.e-frustrazione{background:rgba(180,120,60,.2);color:#e6bd8a}
+.e-ansia{background:rgba(80,140,140,.2);color:#92d0cc}
+
+/* form */
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12.5px;letter-spacing:.5px;color:var(--oro-soft);margin-bottom:8px;font-weight:600}
+.field .hint{color:var(--pietra);font-size:12px;font-weight:400;letter-spacing:.2px}
+textarea,input[type=text]{
+  width:100%;background:var(--glass);border:1px solid var(--line-soft);border-radius:14px;
+  padding:13px 15px;color:var(--bianco);font-family:var(--sans);font-size:14.5px;resize:none;line-height:1.5;
+  transition:border-color .25s;
+}
+textarea:focus,input:focus{outline:none;border-color:var(--oro)}
+input[type=range]{width:100%;-webkit-appearance:none;height:5px;border-radius:10px;
+  background:linear-gradient(90deg,var(--oro),rgba(255,255,255,.1));margin-top:6px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff,var(--oro));box-shadow:0 0 0 4px rgba(201,163,91,.18),0 4px 10px rgba(0,0,0,.4);cursor:pointer}
+
+/* stat tiles */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:var(--glass);border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:16px}
+.stat .n{font-family:var(--serif);font-size:27px;color:var(--oro-soft)}
+.stat .l{font-size:11px;color:var(--pietra);letter-spacing:.5px;margin-top:2px;text-transform:uppercase}
+
+/* phases */
+.phase{display:flex;gap:14px;align-items:flex-start;padding:14px;border-radius:var(--r-sm);
+  border:1px solid var(--line-soft);background:var(--glass);margin-bottom:10px;position:relative}
+.phase.done{border-color:var(--line)}
+.phase.current{border-color:var(--oro);background:linear-gradient(140deg,rgba(201,163,91,.12),rgba(255,255,255,.02))}
+.phase .glyph{width:46px;height:46px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line)}
+.phase .glyph svg{width:26px;height:26px}
+.phase h4{font-family:var(--serif);font-weight:500;font-size:17px;display:flex;align-items:center;gap:8px}
+.phase small{color:var(--pietra);font-size:12.5px}
+.phase .ph-state{position:absolute;right:14px;top:14px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--oro)}
+
+/* chart bars */
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.bar-row .lab{width:88px;font-size:12.5px;color:var(--bianco-dim)}
+.bar-track{flex:1;height:8px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden}
+.bar-track > i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--oro-deep),var(--oro-soft));transition:width .9s var(--ease)}
+.bar-row .val{width:26px;text-align:right;font-size:12px;color:var(--pietra)}
+
+/* word cloud */
+.cloud{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline}
+.cloud span{color:var(--bianco-dim);line-height:1}
+
+/* insight */
+.insight{display:flex;gap:12px;padding:15px;border-radius:var(--r-sm);
+  background:linear-gradient(150deg,rgba(201,163,91,.1),rgba(255,255,255,.02));
+  border:1px solid var(--line);margin-bottom:10px}
+.insight .ic{flex-shrink:0;color:var(--oro);margin-top:1px}
+
+/* fab */
+.fab{position:absolute;right:20px;bottom:18px;z-index:7;width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--oro),var(--oro-deep));border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(201,163,91,.4);
+  transition:transform .3s var(--ease)}
+.fab:active{transform:scale(.92) rotate(90deg)}
+.fab svg{width:26px;height:26px;stroke:#1a1407;stroke-width:2;fill:none}
+
+/* header row */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 0 18px}
+.avatar{width:42px;height:42px;border-radius:14px;background:radial-gradient(circle at 30% 25%,#2a3756,#10182b);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--serif);color:var(--oro)}
+
+.fade-seq>*{opacity:0;transform:translateY(10px);animation:rise .6s var(--ease) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+.fade-seq>*:nth-child(1){animation-delay:.05s}
+.fade-seq>*:nth-child(2){animation-delay:.13s}
+.fade-seq>*:nth-child(3){animation-delay:.21s}
+.fade-seq>*:nth-child(4){animation-delay:.29s}
+.fade-seq>*:nth-child(5){animation-delay:.37s}
+.fade-seq>*:nth-child(6){animation-delay:.45s}
+.fade-seq>*:nth-child(7){animation-delay:.53s}
+
+.divider{height:1px;background:var(--line-soft);margin:18px 0}
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);z-index:20;
+  background:rgba(20,24,30,.95);border:1px solid var(--line);color:var(--bianco);
+  padding:12px 20px;border-radius:30px;font-size:13.5px;opacity:0;transition:all .4s var(--ease);
+  backdrop-filter:blur(10px);box-shadow:var(--shadow);pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{font-size:11.5px;padding:5px 11px;border-radius:20px;background:var(--glass-2);border:1px solid var(--line-soft);color:var(--bianco-dim)}
+.linklike{color:var(--oro);font-size:13px;cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<div id="device">
+  <svg class="alch-bg" viewBox="0 0 200 200">
+    <g stroke="#c9a35b" fill="none" stroke-width=".6">
+      <circle cx="100" cy="100" r="92"/>
+      <circle cx="100" cy="100" r="70"/>
+      <circle cx="100" cy="100" r="48"/>
+      <polygon points="100,20 169,140 31,140"/>
+      <polygon points="100,180 31,60 169,60"/>
+      <rect x="58" y="58" width="84" height="84"/>
+    </g>
+  </svg>
+
+  <div class="statusbar">
+    <span>9:41</span>
+    <span style="font-family:var(--serif);letter-spacing:2px;color:var(--oro)">ATHANOR</span>
+    <span class="dots"><span></span><span></span><span></span></span>
+  </div>
+
+  <div id="viewport"></div>
+
+  <div class="toast" id="toast"></div>
+  <nav id="nav"></nav>
+</div>
+
+<script>
+/* =========================================================================
+   ATHANOR — Architettura applicativa (web app funzionante)
+   - state: stato globale (sincronizzato con Supabase; fallback in memoria)
+   - screens: render funzionale per ogni schermata
+   - router: gestione navigazione + transizioni
+   ========================================================================= */
+
+/* =========================================================================
+   CONFIGURAZIONE SUPABASE
+   Inserisci qui l'URL e la chiave ANON pubblica del tuo progetto Supabase.
+   (Project Settings > API). La chiave anon e sicura lato client.
+   NON inserire mai la service_role key.
+   Se lasci i placeholder, l'app funziona in modalita LOCALE (dati in memoria).
+   ========================================================================= */
+const SUPABASE_URL      = "https://gnzvstaetlwlvvksfodg.supabase.co";       // es. https://xxxx.supabase.co
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduenZzdGFldGx3bHZ2a3Nmb2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzk3OTQsImV4cCI6MjA5NzY1NTc5NH0.JGqI8RIYQV-C3dSAvn4vWJ8jLRZwJ9n_CL54P9lwUf4";  // es. eyJhbGciOi...
+
+let sb = null;
+const cloudEnabled = SUPABASE_URL.startsWith("http") && SUPABASE_ANON_KEY.length > 20;
+if (cloudEnabled && window.supabase) {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+/* mappa fasi DB <-> indice numerico usato dalla UI */
+const PHASE_KEYS = ["nigredo","albedo","rubedo"];
+const phaseToIdx = k => Math.max(0, PHASE_KEYS.indexOf(k));
+const idxToPhase = i => PHASE_KEYS[i] || "nigredo";
+
+const EMOTIONS = ["rabbia","paura","tristezza","vergogna","gioia","frustrazione","ansia"];
+const BLOCKS = ["procrastinazione","paura del giudizio","ansia","autostima","rabbia","bisogno di approvazione","relazioni difficili"];
+
+const QUOTES = [
+  ["Cio che resiste, persiste; cio che accogli, si trasforma.","Carl Jung (parafrasi)"],
+  ["La via d'uscita e attraverso.","Robert Frost"],
+  ["Conosci te stesso.","Oracolo di Delfi"],
+  ["L'oro non si trova: si raffina nel fuoco.","Athanor"],
+];
+
+/* ---- in-memory store (sostituibile con Firestore) ---- */
+const state = {
+  onboarded:false,
+  user:{name:"Viandante", initial:"A"},
+  blocks:[],            // {id,name,phase 0-2}
+  mainBlock:null,
+  mainBlockId:null,
+  uid:null,
+  goal:"",
+  dailyTime:"15",
+  entries:[],
+  streak:7,
+  exercisesDone:12,
+  minutes:340,
+  opera:0,
+};
+
+function seed(){
+  state.entries=[
+    {ev:"Riunione di lavoro: non ho preso la parola.",emo:"paura",int:7,
+     interp:"Temo il giudizio degli altri sulle mie idee.",
+     trasm:"Il mio valore non dipende dall'approvazione altrui.",
+     azione:"Domani interverro almeno una volta.",day:"3 giorni fa",words:["giudizio","valore","approvazione"]},
+    {ev:"Ho rimandato di nuovo un progetto importante.",emo:"frustrazione",int:6,
+     interp:"La paura di non essere all'altezza mi blocca.",
+     trasm:"Posso agire anche in modo imperfetto.",
+     azione:"25 minuti di lavoro focalizzato.",day:"5 giorni fa",words:["paura","altezza","blocco"]},
+    {ev:"Un commento di un amico mi ha ferito.",emo:"tristezza",int:5,
+     interp:"Cerco costantemente conferme esterne.",
+     trasm:"L'opinione altrui e un'informazione, non una sentenza.",
+     azione:"Scrivere 3 cose che apprezzo di me.",day:"6 giorni fa",words:["giudizio","conferme","valore"]},
+  ];
+}
+
+/* ---------- ICON SET ---------- */
+const I = {
+  home:'<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>',
+  book:'<svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>',
+  chart:'<svg viewBox="0 0 24 24"><path d="M4 20V6"/><path d="M4 20h16"/><path d="M8 20v-6"/><path d="M13 20v-9"/><path d="M18 20v-4"/></svg>',
+  flask:'<svg viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 15h9"/></svg>',
+  user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 20c1-4 4.5-5 7-5s6 1 7 5"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  spark:'<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>',
+};
+/* alchemical phase glyphs — 3 fasi: nero, bianco, rosso */
+const G = {
+  nigredo:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#15181d" stroke="#c9a35b" stroke-width="1.2"/></svg>',
+  albedo:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#f4efe6" stroke="#c9a35b" stroke-width="1.2"/></svg>',
+  rubedo:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#b0402f" stroke="#c9a35b" stroke-width="1.2"/><path d="M12 6l1.6 4.2L18 11l-4.4.8L12 16l-1.6-4.2L6 11l4.4-.8z" fill="#c9a35b" opacity=".8"/></svg>',
+};
+const PHASES=[
+  {key:"nigredo",name:"Nigredo",color:"Nero",sub:"Presa di coscienza",g:G.nigredo},
+  {key:"albedo",name:"Albedo",color:"Bianco",sub:"Comprensione",g:G.albedo},
+  {key:"rubedo",name:"Rubedo",color:"Rosso",sub:"Trasformazione",g:G.rubedo},
+];
+const MAXPHASE = PHASES.length-1; // 2
+
+/* ---------- helpers ---------- */
+const vp = ()=>document.getElementById('viewport');
+const esc = s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* =========================================================================
+   DATA LAYER — Supabase (con fallback locale in memoria)
+   ========================================================================= */
+const DB = {
+  async signInWith(provider){            // 'google' | 'apple'
+    if(!sb){toast("Modalita demo: configura Supabase per il login");return;}
+    const {error}=await sb.auth.signInWithOAuth({
+      provider, options:{redirectTo: window.location.href}
+    });
+    if(error)toast("Errore login: "+error.message);
+  },
+  async signOut(){ if(sb) await sb.auth.signOut(); location.reload(); },
+  async currentUser(){ if(!sb) return null; const {data}=await sb.auth.getUser(); return data.user; },
+
+  async loadProfile(uid){
+    const {data}=await sb.from('profiles').select('*').eq('id',uid).single();
+    return data;
+  },
+  async saveOnboarding(uid,{goal,daily_time,blocks}){
+    await sb.from('profiles').update({goal,daily_time,onboarded:true}).eq('id',uid);
+    // crea i blocchi scelti
+    const rows=blocks.map((name,i)=>({user_id:uid,name,phase:i===0?'albedo':'nigredo',is_main:i===0}));
+    if(rows.length) await sb.from('blocks').insert(rows);
+  },
+  async loadBlocks(uid){
+    const {data}=await sb.from('blocks').select('*').eq('user_id',uid).order('created_at');
+    return (data||[]).map(b=>({id:b.id,name:b.name,phase:phaseToIdx(b.phase),is_main:b.is_main}));
+  },
+  async advanceBlock(id,newIdx){
+    if(sb) await sb.from('blocks').update({phase:idxToPhase(newIdx)}).eq('id',id);
+  },
+  async loadEntries(uid){
+    const {data}=await sb.from('entries').select('*').eq('user_id',uid).order('created_at',{ascending:false});
+    return (data||[]).map(e=>({
+      id:e.id, ev:e.event, emo:e.emotion, int:e.intensity,
+      interp:e.interpretation, trasm:e.transmutation, azione:e.action,
+      words:e.keywords||[], day:relTime(e.created_at)
+    }));
+  },
+  async addEntry(uid,e){
+    if(!sb) return;
+    const {data}=await sb.from('entries').insert({
+      user_id:uid, block_id:state.mainBlockId||null,
+      event:e.ev, emotion:e.emo, intensity:e.int,
+      interpretation:e.interp, transmutation:e.trasm, action:e.azione, keywords:e.words
+    }).select().single();
+    return data;
+  }
+};
+function relTime(iso){
+  const d=(Date.now()-new Date(iso).getTime())/86400000;
+  if(d<1)return"oggi"; if(d<2)return"ieri"; return Math.floor(d)+" giorni fa";
+}
+
+/* ============================ SCREENS ============================ */
+
+function scOnboard(){
+  let step = 0;
+  const data={blocks:[],goal:"",time:"15"};
+  const root=document.createElement('div');root.className="screen no-pad active";
+  function render(){
+    if(step===0){
+      root.innerHTML=`
+      <div style="height:100%;display:flex;flex-direction:column;justify-content:center;padding:40px 30px;text-align:center" class="fade-seq">
+        <div style="margin:0 auto 26px;width:96px;height:96px;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 100 100" width="96" height="96">
+            <g stroke="#c9a35b" fill="none" stroke-width="1">
+              <circle cx="50" cy="50" r="44"/><polygon points="50,12 84,72 16,72"/>
+              <circle cx="50" cy="50" r="16" fill="rgba(201,163,91,.15)"/>
+            </g>
+          </svg>
+        </div>
+        <div class="eyebrow">Laboratorio interiore</div>
+        <h1 class="title" style="font-size:38px;margin-top:10px">Athanor</h1>
+        <p class="lede" style="margin:14px 8px 32px">Un tempio della crescita personale.<br>Trasforma i tuoi blocchi in consapevolezza, come l'alchimista raffina la materia in oro.</p>
+        <button class="btn" id="ob-start">Inizia il percorso</button>
+        <p class="muted" style="margin-top:16px;font-size:12px">Continuando accetti di intraprendere un lavoro su di te.</p>
+      </div>`;
+      root.querySelector('#ob-start').onclick=()=>{step=1;render();};
+    } else if(step>=1 && step<=3){
+      const q=[
+        {t:"Quali blocchi stai affrontando?",h:"Seleziona quelli che senti piu vivi.",multi:true,opts:BLOCKS,key:"blocks"},
+        {t:"Qual e il tuo obiettivo principale?",h:"In una frase, cosa vuoi trasformare.",input:true,key:"goal"},
+        {t:"Quanto tempo puoi dedicare ogni giorno?",h:"Sii realistico: la costanza vale piu dell'intensita.",multi:false,opts:["5 min","15 min","30 min","45 min+"],key:"time"},
+      ][step-1];
+      root.innerHTML=`
+      <div style="height:100%;display:flex;flex-direction:column;padding:30px 26px 26px">
+        <div style="display:flex;gap:6px;margin-bottom:30px">
+          ${[1,2,3].map(i=>`<div style="flex:1;height:3px;border-radius:4px;background:${i<=step?'var(--oro)':'rgba(255,255,255,.1)'}"></div>`).join('')}
+        </div>
+        <div class="fade-seq" style="flex:1">
+          <div class="eyebrow">Passo ${step} di 3</div>
+          <h1 class="title">${q.t}</h1>
+          <p class="muted" style="margin-bottom:24px">${q.h}</p>
+          ${q.input?`<input type="text" id="ob-input" placeholder="Es. Smettere di cercare l'approvazione altrui" style="font-size:16px;padding:16px">`:''}
+          ${q.opts?`<div class="chips" id="ob-chips">${q.opts.map(o=>`<div class="chip" data-v="${o}">${o}</div>`).join('')}</div>`:''}
+        </div>
+        <button class="btn" id="ob-next">Continua</button>
+      </div>`;
+      if(q.opts){
+        root.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+          if(q.multi){c.classList.toggle('sel');data.blocks=[...root.querySelectorAll('.chip.sel')].map(x=>x.dataset.v);}
+          else{root.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');data.time=c.dataset.v;}
+        });
+      }
+      root.querySelector('#ob-next').onclick=()=>{
+        if(q.input){data.goal=root.querySelector('#ob-input').value.trim()||"Crescere in consapevolezza";}
+        if(q.multi && data.blocks.length===0){toast("Seleziona almeno un blocco");return;}
+        if(step<3){step++;render();}else finish();
+      };
+    } else {
+      root.innerHTML=`
+      <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center">
+        <svg viewBox="0 0 100 100" width="120" height="120" style="animation:spin 8s linear infinite">
+          <g stroke="#c9a35b" fill="none" stroke-width="1"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="30"/><polygon points="50,12 84,72 16,72"/></g>
+        </svg>
+        <h2 class="section" style="margin-top:30px">Sto componendo<br>il tuo primo percorso...</h2>
+        <p class="muted">Distillando i tuoi blocchi in un'Opera Alchemica.</p>
+      </div>`;
+      setTimeout(finishBuild,2200);
+    }
+    function finish(){step=4;render();}
+    async function finishBuild(){
+      const chosen=data.blocks.length?data.blocks:["paura del giudizio"];
+      state.goal=data.goal||"Crescere in consapevolezza";
+      state.dailyTime=data.time;
+      state.onboarded=true;
+      if(sb && state.uid){
+        // percorso CLOUD: salva onboarding + ricarica dal DB
+        await DB.saveOnboarding(state.uid,{goal:state.goal,daily_time:state.dailyTime,blocks:chosen});
+        state.blocks=await DB.loadBlocks(state.uid);
+        state.entries=await DB.loadEntries(state.uid);
+      }else{
+        // percorso LOCALE
+        state.blocks=chosen.map((n,i)=>({id:i,name:n,phase:i===0?1:0}));
+        seed();
+      }
+      state.mainBlock=state.blocks[0].name;
+      state.mainBlockId=state.blocks[0].id;
+      computeOpera();
+      buildNav();
+      go('home');
+    }
+  }
+  render();
+  return root;
+}
+
+function computeOpera(){
+  const phaseAvg = state.blocks.length? state.blocks.reduce((a,b)=>a+b.phase,0)/(state.blocks.length*MAXPHASE):0;
+  const journal = Math.min(state.entries.length/8,1);
+  state.opera = Math.round((phaseAvg*0.65 + journal*0.35)*100);
+}
+
+/* ----------------------------- HOME ----------------------------- */
+function scHome(){
+  const r=document.createElement('div');r.className="screen";
+  const q=QUOTES[new Date().getDate()%QUOTES.length];
+  const mb=state.blocks.find(b=>b.name===state.mainBlock)||state.blocks[0];
+  const phase=PHASES[mb?mb.phase:0];
+  r.innerHTML=`
+  <div class="hdr">
+    <div>
+      <div class="eyebrow">Buongiorno</div>
+      <h2 class="section" style="margin:4px 0 0">${esc(state.user.name)}</h2>
+    </div>
+    <div class="avatar">${state.user.initial}</div>
+  </div>
+  <div class="fade-seq">
+    <div class="card gold">
+      <div class="eyebrow">Opera Alchemica</div>
+      <div style="display:flex;align-items:flex-end;gap:10px;margin:6px 0 12px">
+        <span style="font-family:var(--serif);font-size:40px;color:var(--oro-soft)">${state.opera}%</span>
+        <span class="muted" style="margin-bottom:8px">della trasformazione</span>
+      </div>
+      <div class="opera-bar"><i style="width:${state.opera}%"></i></div>
+      <div class="pill-row">
+        ${PHASES.map((p,i)=>`<span class="pill" style="${(mb&&i<=mb.phase)?'border-color:var(--oro);color:var(--oro-soft)':''}">${p.name}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Citazione del giorno</div>
+      <p style="font-family:var(--serif);font-size:18px;line-height:1.5;margin:10px 0 8px">"${q[0]}"</p>
+      <p class="muted">- ${q[1]}</p>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Blocco in lavorazione</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+        <div>
+          <div style="font-family:var(--serif);font-size:20px;text-transform:capitalize">${esc(mb?mb.name:'-')}</div>
+          <div class="muted">Fase attuale: <span style="color:var(--oro-soft)">${phase.name} (${phase.color}) - ${phase.sub}</span></div>
+        </div>
+        <div style="width:46px;height:46px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center">${phase.g}</div>
+      </div>
+      <div class="opera-bar" style="margin-top:14px"><i style="width:${((mb?mb.phase:0)+1)/PHASES.length*100}%"></i></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Esercizio del giorno</div>
+      <div style="display:flex;gap:14px;align-items:flex-start;margin-top:10px">
+        <div style="color:var(--oro)">${I.flask}</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:15.5px">Scrittura riflessiva</div>
+          <p class="muted">Annota un episodio in cui hai cercato l'approvazione altrui. Cosa temevi?</p>
+          <div class="pill-row"><span class="pill">10 min</span><span class="pill">Livello 1</span><span class="pill">Osservazione</span></div>
+        </div>
+      </div>
+      <button class="btn" style="margin-top:14px" onclick="go('diario')">Apri nel Diario</button>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="eyebrow">Prossimi incontri</div>
+        <span class="linklike">Vedi tutti</span>
+      </div>
+      <div style="display:flex;gap:14px;align-items:center;margin-top:12px">
+        <div style="text-align:center;width:54px">
+          <div style="font-family:var(--serif);font-size:24px;color:var(--oro-soft)">24</div>
+          <div class="muted" style="font-size:11px">GIU</div>
+        </div>
+        <div style="flex:1;border-left:1px solid var(--line-soft);padding-left:14px">
+          <div style="font-weight:600">Laboratorio - L'Ombra di Jung</div>
+          <div class="muted">19:00 - Online - 90 min</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  return r;
+}
+
+/* ----------------------------- DIARIO ----------------------------- */
+function scDiario(){
+  const r=document.createElement('div');r.className="screen";
+  function timeline(){
+    return state.entries.map(e=>`
+      <div class="tl-item">
+        <div class="card" style="padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span class="etag e-${e.emo}">${e.emo} - ${e.int}/10</span>
+            <span class="muted" style="font-size:12px">${e.day}</span>
+          </div>
+          <div style="font-weight:600;font-size:15px;margin-bottom:6px">${esc(e.ev)}</div>
+          <p class="muted" style="margin-bottom:4px"><b style="color:var(--oro-soft)">Trasmutazione - </b>${esc(e.trasm)}</p>
+          <p class="muted"><b style="color:var(--oro-soft)">Azione - </b>${esc(e.azione)}</p>
+        </div>
+      </div>`).join('');
+  }
+  r.innerHTML=`
+  <div class="hdr"><div><div class="eyebrow">Schermata principale</div><h2 class="section" style="margin:4px 0 0">Diario Alchemico</h2></div></div>
+  <div class="fade-seq">
+    <button class="btn" id="d-new">+ Nuova voce</button>
+    <p class="muted" style="margin:16px 0 10px">${state.entries.length} trasmutazioni registrate</p>
+    <div class="tl">${timeline()}</div>
+  </div>`;
+  r.querySelector('#d-new').onclick=openEntryForm;
+  return r;
+}
+
+function openEntryForm(){
+  const ov=document.createElement('div');
+  ov.className="screen active no-pad";
+  ov.style.cssText="background:linear-gradient(180deg,var(--antracite),var(--notte-2));z-index:30;padding:0";
+  ov.innerHTML=`
+  <div style="padding:18px 22px 40px;height:100%;overflow-y:auto" class="fade-seq">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 class="section" style="margin:0">Nuova trasmutazione</h2>
+      <span class="linklike" id="f-close">Chiudi</span>
+    </div>
+    <p class="muted" style="margin-bottom:20px">Trasforma un'esperienza in insegnamento.</p>
+    <div class="field"><label>Evento <span class="hint">- cosa e successo?</span></label>
+      <textarea id="f-ev" rows="2" placeholder="Descrivi l'episodio"></textarea></div>
+    <div class="field"><label>Emozione principale</label>
+      <div class="chips" id="f-emo">${EMOTIONS.map(e=>`<div class="chip" data-v="${e}">${e}</div>`).join('')}</div></div>
+    <div class="field"><label>Intensita <span class="hint" id="f-intval">- 5 / 10</span></label>
+      <input type="range" id="f-int" min="1" max="10" value="5"></div>
+    <div class="field"><label>Interpretazione <span class="hint">- cosa mi sta mostrando?</span></label>
+      <textarea id="f-interp" rows="2" placeholder="Quale schema riconosci?"></textarea></div>
+    <div class="field"><label>Trasmutazione <span class="hint">- quale insegnamento?</span></label>
+      <textarea id="f-trasm" rows="2" placeholder="L'oro nascosto in questa esperienza"></textarea></div>
+    <div class="field"><label>Azione concreta <span class="hint">- quale passo faro?</span></label>
+      <textarea id="f-azione" rows="2" placeholder="Un gesto piccolo e reale"></textarea></div>
+    <button class="btn" id="f-save">Sigilla la voce</button>
+  </div>`;
+  vp().appendChild(ov);
+  let emo="paura";
+  ov.querySelectorAll('#f-emo .chip').forEach((c,i)=>{ if(i===1)c.classList.add('sel');
+    c.onclick=()=>{ov.querySelectorAll('#f-emo .chip').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');emo=c.dataset.v;};});
+  const sl=ov.querySelector('#f-int');sl.oninput=()=>ov.querySelector('#f-intval').textContent=`- ${sl.value} / 10`;
+  ov.querySelector('#f-close').onclick=()=>ov.remove();
+  ov.querySelector('#f-save').onclick=async ()=>{
+    const ev=ov.querySelector('#f-ev').value.trim();
+    if(!ev){toast("Descrivi prima l'evento");return;}
+    const text=(ev+" "+ov.querySelector('#f-interp').value+" "+ov.querySelector('#f-trasm').value).toLowerCase();
+    const words=text.split(/\W+/).filter(w=>w.length>5).slice(0,3);
+    const entry={
+      ev, emo, int:+sl.value,
+      interp:ov.querySelector('#f-interp').value.trim()||"-",
+      trasm:ov.querySelector('#f-trasm').value.trim()||"-",
+      azione:ov.querySelector('#f-azione').value.trim()||"-",
+      day:"oggi", words
+    };
+    state.entries.unshift(entry);
+    computeOpera();
+    ov.remove();
+    go('diario');
+    toast(sb&&state.uid?"Voce sigillata e salvata nel cloud":"Voce sigillata nell'Opera");
+    if(sb&&state.uid){ try{ await DB.addEntry(state.uid,entry); }catch(err){ toast("Salvataggio cloud non riuscito"); } }
+  };
+}
+
+/* ----------------------------- SCHEMI ----------------------------- */
+function scSchemi(){
+  const r=document.createElement('div');r.className="screen";
+  const freq={};EMOTIONS.forEach(e=>freq[e]=0);
+  state.entries.forEach(e=>freq[e.emo]++);
+  const total=state.entries.length||1;
+  const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>0);
+  const wc={};state.entries.forEach(e=>(e.words||[]).forEach(w=>wc[w]=(wc[w]||0)+1));
+  const words=Object.entries(wc).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxW=words.length?words[0][1]:1;
+  const ints=[...state.entries].reverse().map(e=>e.int);
+  const topEmo=sorted[0]?sorted[0][0]:"-";
+  const topWord=words[0]?words[0][0]:"giudizio";
+
+  r.innerHTML=`
+  <div class="hdr"><div><div class="eyebrow">Lettura profonda</div><h2 class="section" style="margin:4px 0 0">Analisi degli Schemi</h2></div></div>
+  <div class="fade-seq">
+    <div class="insight">
+      <div class="ic">${I.spark}</div>
+      <div><b>Insight automatico.</b> Negli ultimi giorni emerge frequentemente il tema del <b style="color:var(--oro-soft)">${esc(topWord)}</b>, accompagnato spesso da <b style="color:var(--oro-soft)">${esc(topEmo)}</b>.</div>
+    </div>
+
+    <div class="card">
+      <h2 class="section">Emozioni piu frequenti</h2>
+      ${sorted.map(([e,n])=>`
+        <div class="bar-row"><span class="lab" style="text-transform:capitalize">${e}</span>
+        <div class="bar-track"><i style="width:${Math.round(n/total*100)}%"></i></div>
+        <span class="val">${n}</span></div>`).join('')||'<p class="muted">Aggiungi voci per vedere i tuoi schemi.</p>'}
+    </div>
+
+    <div class="card">
+      <h2 class="section">Intensita emotiva nel tempo</h2>
+      <svg viewBox="0 0 280 90" width="100%" height="90" style="overflow:visible">
+        <defs><linearGradient id="ig" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#c9a35b" stop-opacity=".4"/><stop offset="1" stop-color="#c9a35b" stop-opacity="0"/></linearGradient></defs>
+        ${sparkline(ints,280,90)}
+      </svg>
+      <p class="muted" style="margin-top:6px">Le punte indicano i momenti piu carichi: li abita il materiale dell'Opera.</p>
+    </div>
+
+    <div class="card">
+      <h2 class="section">Parole ricorrenti</h2>
+      <div class="cloud">
+        ${words.map(([w,n])=>`<span style="font-size:${13+(n/maxW)*16}px;color:${n===maxW?'var(--oro-soft)':'var(--bianco-dim)'};font-family:var(--serif)">${esc(w)}</span>`).join('')||'<span class="muted">-</span>'}
+      </div>
+    </div>
+
+    <div class="insight">
+      <div class="ic">${I.spark}</div>
+      <div><b>Progresso.</b> L'intensita media delle tue emozioni e ${ints.length?(ints.reduce((a,b)=>a+b,0)/ints.length).toFixed(1):'-'}/10. Ogni voce che scrivi rende lo schema piu visibile - e cio che e visibile puo essere trasformato.</div>
+    </div>
+  </div>`;
+  return r;
+}
+function sparkline(vals,W,H){
+  if(vals.length<2){return `<text x="10" y="50" fill="#7c8088" font-size="11">Servono piu voci</text>`;}
+  const max=10,min=0,pad=8;
+  const stepX=(W-pad*2)/(vals.length-1);
+  const pts=vals.map((v,i)=>[pad+i*stepX, H-pad-(v-min)/(max-min)*(H-pad*2)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=line+` L ${pts[pts.length-1][0].toFixed(1)} ${H-pad} L ${pts[0][0].toFixed(1)} ${H-pad} Z`;
+  return `<path d="${area}" fill="url(#ig)"/><path d="${line}" fill="none" stroke="#d9bd84" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="#10182b" stroke="#d9bd84" stroke-width="1.5"/>`).join('')}`;
+}
+
+/* --------------------- SISTEMA ALCHEMICO (blocchi) --------------------- */
+function scOpera(){
+  const r=document.createElement('div');r.className="screen";
+  function blockCard(b){
+    return `<div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-family:var(--serif);font-size:21px;text-transform:capitalize">${esc(b.name)}</div>
+        <span class="pill" style="border-color:var(--oro);color:var(--oro-soft)">${PHASES[b.phase].name}</span>
+      </div>
+      <p class="muted" style="margin:6px 0 14px">${blockDesc(b.name)}</p>
+      ${PHASES.map((p,i)=>`
+        <div class="phase ${i<b.phase?'done':i===b.phase?'current':''}">
+          <div class="glyph">${p.g}</div>
+          <div style="flex:1">
+            <h4>${p.name} <span style="color:var(--pietra);font-size:13px">(${p.color})</span> ${i<b.phase?'<span style="color:var(--oro);font-size:13px">&#10003;</span>':''}</h4>
+            <small>${p.sub} - ${phaseDesc(p.key)}</small>
+          </div>
+          ${i===b.phase?'<span class="ph-state">In corso</span>':''}
+        </div>`).join('')}
+      <button class="btn ghost" style="margin-top:8px" data-adv="${b.id}">Avanza alla fase successiva</button>
+    </div>`;
+  }
+  r.innerHTML=`
+  <div class="hdr"><div><div class="eyebrow">La grande opera</div><h2 class="section" style="margin:4px 0 0">Sistema Alchemico</h2></div></div>
+  <div class="fade-seq">
+    <p class="lede" style="margin-bottom:18px">Ogni blocco attraversa tre fasi: dal <b style="color:var(--bianco)">Nero</b> della presa di coscienza, al <b style="color:var(--bianco)">Bianco</b> della comprensione, fino al <b style="color:var(--oro-soft)">Rosso</b> della trasformazione.</p>
+    ${state.blocks.map(blockCard).join('')}
+  </div>`;
+  r.querySelectorAll('[data-adv]').forEach(btn=>btn.onclick=()=>{
+    const b=state.blocks.find(x=>x.id==btn.dataset.adv);
+    if(b.phase<MAXPHASE){b.phase++;computeOpera();go('opera');
+      toast(b.phase===MAXPHASE?"Rubedo: blocco trasformato":"Avanzato a "+PHASES[b.phase].name+" ("+PHASES[b.phase].color+")");
+      if(b.phase===MAXPHASE)state.exercisesDone++;
+      DB.advanceBlock(b.id,b.phase);
+    }else toast("Questo blocco e gia in Rubedo");
+  });
+  return r;
+}
+function blockDesc(n){const d={
+  "paura del giudizio":"Il timore dello sguardo altrui che limita l'espressione autentica di se.",
+  "procrastinazione":"Il rimandare come strategia di protezione dalla paura di fallire.",
+  "ansia":"L'anticipazione di un pericolo che vive piu nella mente che nel presente.",
+  "autostima":"La relazione, spesso ferita, che intrattieni con il tuo stesso valore.",
+  "rabbia":"L'energia di un confine violato, in cerca di una voce matura.",
+  "bisogno di approvazione":"La ricerca all'esterno di una conferma che attende dentro di te.",
+  "relazioni difficili":"Gli schemi che si ripetono nei legami e chiedono di essere visti."};
+  return d[n]||"Un nodo interiore da osservare e sciogliere con pazienza.";}
+function phaseDesc(k){return {
+  nigredo:"riconoscere e nominare cio che prima era inconscio.",
+  albedo:"comprendere l'origine e il significato dello schema.",
+  rubedo:"agire da un luogo nuovo: la trasformazione e compiuta."}[k];}
+
+/* ----------------------------- PROFILO ----------------------------- */
+function scProfilo(){
+  const r=document.createElement('div');r.className="screen";
+  const transformed=state.blocks.filter(b=>b.phase>=MAXPHASE).length;
+  const awareness=Math.min(99,40+state.entries.length*4+transformed*8);
+  r.innerHTML=`
+  <div class="hdr"><div><div class="eyebrow">Il viandante</div><h2 class="section" style="margin:4px 0 0">Profilo</h2></div>
+    <div class="avatar" style="width:48px;height:48px">${state.user.initial}</div></div>
+  <div class="fade-seq">
+    <div class="card gold" style="text-align:center">
+      <div class="eyebrow">Livello di Consapevolezza</div>
+      <div style="font-family:var(--serif);font-size:46px;color:var(--oro-soft);margin:6px 0">${Math.floor(awareness/10)}</div>
+      <div class="opera-bar"><i style="width:${awareness%10*10}%"></i></div>
+      <p class="muted" style="margin-top:10px">Energia Interiore: ${awareness}%</p>
+    </div>
+    <div class="stat-grid" style="margin-top:14px">
+      <div class="stat"><div class="n">${state.streak}</div><div class="l">Giorni di presenza</div></div>
+      <div class="stat"><div class="n">${state.exercisesDone}</div><div class="l">Esercizi completati</div></div>
+      <div class="stat"><div class="n">${transformed}</div><div class="l">Trasformazioni</div></div>
+      <div class="stat"><div class="n">${Math.round(state.minutes/60)}h</div><div class="l">Tempo dedicato</div></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="eyebrow">Obiettivo</div>
+      <p style="font-family:var(--serif);font-size:17px;margin-top:8px">"${esc(state.goal)}"</p>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Assistente alchemico</div>
+      <p class="muted" style="margin:8px 0 12px">Domande socratiche per andare piu in profondita.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${["Cosa ti ha colpito maggiormente di questa esperienza?","Quale convinzione emerge da questo episodio?","Cosa diresti a un amico nella stessa situazione?"]
+          .map(qx=>`<div class="card" style="padding:13px;background:var(--glass-2)"><span style="color:var(--oro);margin-right:6px">&#10078;</span>${qx}</div>`).join('')}
+      </div>
+    </div>
+
+    <button class="btn ghost" style="margin-top:8px" onclick="restart()">${sb&&state.uid?'Esci dall\'account':'Ricomincia l\'onboarding'}</button>
+    <p class="muted" style="text-align:center;margin-top:18px;font-size:12px">Athanor - ${sb&&state.uid?'sincronizzato con Supabase':'modalita demo (dati in memoria)'}</p>
+  </div>`;
+  return r;
+}
+
+/* ============================ ROUTER ============================ */
+const SCREENS={home:scHome,diario:scDiario,schemi:scSchemi,opera:scOpera,profilo:scProfilo};
+let fab=null;
+function go(name){
+  const v=vp();
+  [...v.children].forEach(c=>c.remove());
+  const el=SCREENS[name]();
+  v.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.s===name));
+  if(fab)fab.remove();
+  if(name==='diario'){
+    fab=document.createElement('button');fab.className='fab';fab.innerHTML=I.plus;
+    fab.onclick=openEntryForm;document.getElementById('device').appendChild(fab);
+  }
+  v.scrollTop=0;
+}
+function buildNav(){
+  const nav=document.getElementById('nav');
+  const items=[["home","Home",I.home],["diario","Diario",I.book],["schemi","Schemi",I.chart],["opera","Opera",I.flask],["profilo","Tu",I.user]];
+  nav.innerHTML=items.map(([s,l,ic])=>`<div class="nav-item" data-s="${s}">${ic}<span>${l}</span></div>`).join('');
+  nav.querySelectorAll('.nav-item').forEach(n=>n.onclick=()=>go(n.dataset.s));
+  nav.style.display='flex';
+}
+function restart(){
+  state.onboarded=false;state.blocks=[];state.entries=[];state.opera=0;
+  document.getElementById('nav').style.display='none';
+  if(fab){fab.remove();fab=null;}
+  [...vp().children].forEach(c=>c.remove());
+  vp().appendChild(scOnboard());
+}
+
+/* ============================ LOGIN ============================ */
+function scLogin(){
+  const r=document.createElement('div');r.className="screen no-pad active";
+  r.innerHTML=`
+  <div style="height:100%;display:flex;flex-direction:column;justify-content:center;padding:44px 32px;text-align:center" class="fade-seq">
+    <div style="margin:0 auto 24px;width:96px;height:96px;display:flex;align-items:center;justify-content:center">
+      <svg viewBox="0 0 100 100" width="96" height="96" style="animation:spin 30s linear infinite">
+        <g stroke="#c9a35b" fill="none" stroke-width="1">
+          <circle cx="50" cy="50" r="44"/><polygon points="50,12 84,72 16,72"/>
+          <circle cx="50" cy="50" r="16" fill="rgba(201,163,91,.15)"/></g>
+      </svg>
+    </div>
+    <div class="eyebrow">Laboratorio interiore</div>
+    <h1 class="title" style="font-size:38px;margin-top:10px">Athanor</h1>
+    <p class="lede" style="margin:14px 8px 30px">Accedi per custodire la tua Opera Alchemica nel cloud, sincronizzata su ogni dispositivo.</p>
+    <button class="btn" id="lg-google" style="margin-bottom:12px">Continua con Google</button>
+    <button class="btn ghost" id="lg-apple" style="margin-bottom:20px">Continua con Apple</button>
+    <span class="linklike" id="lg-demo">Entra in modalita demo (senza account)</span>
+    ${!cloudEnabled?'<p class="muted" style="margin-top:20px;font-size:12px">Supabase non configurato: il login usera la modalita demo finche non inserisci URL e chiave anon.</p>':''}
+  </div>`;
+  r.querySelector('#lg-google').onclick=()=>DB.signInWith('google');
+  r.querySelector('#lg-apple').onclick=()=>DB.signInWith('apple');
+  r.querySelector('#lg-demo').onclick=()=>{ state.uid=null; startOnboarding(); };
+  return r;
+}
+function startOnboarding(){
+  document.getElementById('nav').style.display='none';
+  [...vp().children].forEach(c=>c.remove());
+  vp().appendChild(scOnboard());
+}
+
+/* ============================ BOOT ============================ */
+async function boot(){
+  document.getElementById('nav').style.display='none';
+  const user = await DB.currentUser();           // null se non loggato o modalita demo
+  if(user){
+    // sessione cloud attiva: carica profilo e dati
+    state.uid=user.id;
+    const prof=await DB.loadProfile(user.id);
+    if(prof){
+      state.user.name=prof.display_name||"Viandante";
+      state.user.initial=(prof.display_name||"A").trim().charAt(0).toUpperCase();
+      state.goal=prof.goal||state.goal;
+      state.dailyTime=prof.daily_time||state.dailyTime;
+      state.streak=prof.streak; state.exercisesDone=prof.exercises_done; state.minutes=prof.minutes;
+    }
+    state.blocks=await DB.loadBlocks(user.id);
+    state.entries=await DB.loadEntries(user.id);
+    if(prof && prof.onboarded && state.blocks.length){
+      state.mainBlock=state.blocks[0].name;
+      state.mainBlockId=state.blocks[0].id;
+      state.onboarded=true;
+      computeOpera(); buildNav(); go('home');
+    }else{
+      startOnboarding();           // utente nuovo: deve fare l'onboarding
+    }
+  }else{
+    // nessuna sessione: mostra login (o demo)
+    [...vp().children].forEach(c=>c.remove());
+    vp().appendChild(scLogin());
+  }
+}
+
+function restartFull(){ if(sb) DB.signOut(); else { state.uid=null; vp().innerHTML=''; vp().appendChild(scLogin()); } }
+window.restart=restartFull;
+window.go=go;
+/* avvio applicazione */
+boot();
+</script>
+</body>
+</html>
