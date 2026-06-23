@@ -397,7 +397,7 @@ const DB = {
   async signInWith(provider){            // 'google' | 'apple'
     if(!sb){toast("Modalita demo: configura Supabase per il login");return;}
     const {error}=await sb.auth.signInWithOAuth({
-      provider, options:{redirectTo: window.location.href}
+      provider, options:{redirectTo: window.location.origin + window.location.pathname}
     });
     if(error)toast("Errore login: "+error.message);
   },
@@ -925,32 +925,45 @@ function startOnboarding(){
 }
 
 /* ============================ BOOT ============================ */
+async function loadUserData(user){
+  state.uid=user.id;
+  const prof=await DB.loadProfile(user.id);
+  if(prof){
+    state.user.name=prof.display_name||"Viandante";
+    state.user.initial=(prof.display_name||"A").trim().charAt(0).toUpperCase();
+    state.goal=prof.goal||state.goal;
+    state.dailyTime=prof.daily_time||state.dailyTime;
+    state.streak=prof.streak; state.exercisesDone=prof.exercises_done; state.minutes=prof.minutes;
+  }
+  state.blocks=await DB.loadBlocks(user.id);
+  state.entries=await DB.loadEntries(user.id);
+  if(prof && prof.onboarded && state.blocks.length){
+    state.mainBlock=state.blocks[0].name;
+    state.mainBlockId=state.blocks[0].id;
+    state.onboarded=true;
+    computeOpera(); buildNav(); go('home');
+  }else{
+    startOnboarding();
+  }
+}
+
 async function boot(){
   document.getElementById('nav').style.display='none';
-  const user = await DB.currentUser();           // null se non loggato o modalita demo
+
+  // Intercetta il callback OAuth (il token arriva nell'hash dell'URL dopo il redirect)
+  if(sb){
+    sb.auth.onAuthStateChange(async (event, session)=>{
+      if((event==='SIGNED_IN' || event==='TOKEN_REFRESHED') && session && !state.uid){
+        await loadUserData(session.user);
+      }
+    });
+  }
+
+  // Controlla se c'e gia una sessione attiva
+  const user = await DB.currentUser();
   if(user){
-    // sessione cloud attiva: carica profilo e dati
-    state.uid=user.id;
-    const prof=await DB.loadProfile(user.id);
-    if(prof){
-      state.user.name=prof.display_name||"Viandante";
-      state.user.initial=(prof.display_name||"A").trim().charAt(0).toUpperCase();
-      state.goal=prof.goal||state.goal;
-      state.dailyTime=prof.daily_time||state.dailyTime;
-      state.streak=prof.streak; state.exercisesDone=prof.exercises_done; state.minutes=prof.minutes;
-    }
-    state.blocks=await DB.loadBlocks(user.id);
-    state.entries=await DB.loadEntries(user.id);
-    if(prof && prof.onboarded && state.blocks.length){
-      state.mainBlock=state.blocks[0].name;
-      state.mainBlockId=state.blocks[0].id;
-      state.onboarded=true;
-      computeOpera(); buildNav(); go('home');
-    }else{
-      startOnboarding();           // utente nuovo: deve fare l'onboarding
-    }
+    await loadUserData(user);
   }else{
-    // nessuna sessione: mostra login (o demo)
     [...vp().children].forEach(c=>c.remove());
     vp().appendChild(scLogin());
   }
