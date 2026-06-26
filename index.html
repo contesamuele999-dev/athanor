@@ -2,7 +2,7 @@
 <html lang="it" >
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Athanor — Laboratorio di Trasformazione Interiore</title>
 <!-- Supabase JS client (auth + database) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -56,7 +56,7 @@ body{
   overflow:hidden;
   box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.05);
 }
-@media(max-width:480px){#device{width:100vw;height:100vh;border-radius:0}}
+@media(max-width:480px){#device{width:100vw;height:100vh;height:100dvh;border-radius:0}}
 @media(min-width:768px) and (max-height:940px){#device{height:96vh}}
 
 /* faint geometric backdrop */
@@ -75,14 +75,12 @@ body{
 
 /* status bar */
 .statusbar{
-  position:relative;z-index:5;height:46px;display:flex;align-items:center;justify-content:space-between;
+  position:relative;z-index:5;height:46px;display:flex;align-items:center;justify-content:center;
   padding:0 28px;font-size:13px;font-weight:600;color:var(--bianco-dim);
 }
-.statusbar .dots{display:flex;gap:5px;align-items:center}
-.statusbar .dots span{width:5px;height:5px;border-radius:50%;background:var(--bianco-dim);opacity:.55}
 
 /* screens */
-#viewport{position:relative;z-index:2;height:calc(100% - 46px - 76px);overflow:hidden}
+#viewport{position:relative;z-index:2;height:calc(100% - 46px - 76px - env(safe-area-inset-bottom,0px));overflow:hidden}
 .screen{
   position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
   padding:6px 22px 40px;
@@ -148,8 +146,10 @@ h2.section{font-family:var(--serif);font-weight:500;font-size:21px;margin:0 0 14
 
 /* bottom nav */
 #nav{
-  position:absolute;left:0;right:0;bottom:0;z-index:6;height:76px;
-  display:flex;align-items:center;justify-content:space-around;padding:0 8px 6px;
+  position:absolute;left:0;right:0;bottom:0;z-index:6;
+  height:calc(76px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:flex-start;justify-content:space-around;
+  padding:0 8px calc(6px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(180deg,rgba(11,17,32,0),rgba(8,11,20,.92) 38%);
   backdrop-filter:blur(14px);
   border-top:1px solid var(--line-soft);
@@ -229,7 +229,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .insight .ic{flex-shrink:0;color:var(--oro);margin-top:1px}
 
 /* fab */
-.fab{position:absolute;right:20px;bottom:18px;z-index:7;width:58px;height:58px;border-radius:50%;
+.fab{position:absolute;right:20px;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:7;width:58px;height:58px;border-radius:50%;
   background:linear-gradient(135deg,var(--oro),var(--oro-deep));border:none;cursor:pointer;
   display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(201,163,91,.4);
   transition:transform .3s var(--ease)}
@@ -239,7 +239,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 /* header row */
 .hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 0 18px}
 .avatar{width:42px;height:42px;border-radius:14px;background:radial-gradient(circle at 30% 25%,#2a3756,#10182b);
-  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--serif);color:var(--oro)}
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--serif);color:var(--oro);
+  cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+.avatar:active{transform:scale(.93)}
+.avatar.tappable:hover{box-shadow:0 0 0 3px rgba(201,163,91,.18)}
 
 .fade-seq>*{opacity:0;transform:translateY(10px);animation:rise .6s var(--ease) forwards}
 @keyframes rise{to{opacity:1;transform:none}}
@@ -261,6 +264,35 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .pill{font-size:11.5px;padding:5px 11px;border-radius:20px;background:var(--glass-2);border:1px solid var(--line-soft);color:var(--bianco-dim)}
 .linklike{color:var(--oro);font-size:13px;cursor:pointer;font-weight:600}
+
+/* due-date badges */
+.due{font-size:11.5px;padding:4px 10px;border-radius:20px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.due-ok{background:rgba(201,163,91,.14);color:var(--oro-soft);border:1px solid var(--line)}
+.due-soon{background:rgba(180,120,60,.2);color:#e6bd8a;border:1px solid rgba(180,120,60,.4)}
+.due-expired{background:rgba(190,70,60,.2);color:#e79b92;border:1px solid rgba(190,70,60,.45)}
+
+/* checkbox giornaliera */
+.habit-row{display:flex;align-items:flex-start;gap:14px;padding:14px;border-radius:var(--r-sm);
+  border:1px solid var(--line-soft);background:var(--glass);margin-bottom:10px}
+.habit-row.checked{border-color:var(--line);background:linear-gradient(140deg,rgba(201,163,91,.1),rgba(255,255,255,.02))}
+.cbx{width:26px;height:26px;flex-shrink:0;border-radius:8px;border:1.5px solid var(--oro);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s var(--ease);background:transparent}
+.cbx.on{background:linear-gradient(120deg,var(--oro),var(--oro-deep))}
+.cbx svg{width:16px;height:16px;stroke:#1a1407;stroke-width:3;fill:none;opacity:0;transition:opacity .2s}
+.cbx.on svg{opacity:1}
+
+/* admin badge + delete x */
+.role-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;
+  background:linear-gradient(120deg,rgba(201,163,91,.22),rgba(201,163,91,.08));border:1px solid var(--oro);color:var(--oro-soft);font-weight:700}
+.del-x{color:var(--pietra);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:8px}
+.del-x:hover{color:#e79b92;background:rgba(190,70,60,.12)}
+.seg{display:flex;gap:8px;margin-bottom:14px}
+.seg .chip{flex:1;text-align:center}
+input[type=date],select{
+  width:100%;background:var(--glass);border:1px solid var(--line-soft);border-radius:14px;
+  padding:13px 15px;color:var(--bianco);font-family:var(--sans);font-size:14.5px;
+}
+input[type=date]:focus,select:focus{outline:none;border-color:var(--oro)}
 </style>
 </head>
 <body>
@@ -277,9 +309,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   </svg>
 
   <div class="statusbar">
-    <span>9:41</span>
     <span style="font-family:var(--serif);letter-spacing:2px;color:var(--oro)">ATHANOR</span>
-    <span class="dots"><span></span><span></span><span></span></span>
   </div>
 
   <div id="viewport"></div>
@@ -331,6 +361,7 @@ const QUOTES = [
 const state = {
   onboarded:false,
   user:{name:"Viandante", initial:"A"},
+  role:"viandante",     // 'admin' | 'viandante'
   blocks:[],            // {id,name,phase 0-2}
   mainBlock:null,
   mainBlockId:null,
@@ -342,6 +373,9 @@ const state = {
   exercisesDone:12,
   minutes:340,
   opera:0,
+  meetings:[],          // incontri (admin -> tutti)
+  assigned:[],          // esercizi assegnati con scadenza
+  habits:[],            // esercizi auto-creati {id,title,note,doneToday}
 };
 
 function seed(){
@@ -359,6 +393,20 @@ function seed(){
      trasm:"L'opinione altrui e un'informazione, non una sentenza.",
      azione:"Scrivere 3 cose che apprezzo di me.",day:"6 giorni fa",words:["giudizio","conferme","valore"]},
   ];
+  const today=new Date();
+  const inDays=n=>{const d=new Date(today);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+  state.meetings=[
+    {id:"m1",title:"Laboratorio - L'Ombra di Jung",description:"Esplorare la parte rimossa di se.",starts_at:inDays(2)+"T19:00",duration:90,location:"Online"},
+    {id:"m2",title:"Cerchio del silenzio",description:"Meditazione guidata di gruppo.",starts_at:inDays(6)+"T18:30",duration:60,location:"Online"},
+  ];
+  state.assigned=[
+    {id:"a1",title:"Scrittura riflessiva",description:"Annota un episodio in cui hai cercato l'approvazione altrui. Cosa temevi?",level:"Livello 1",minutes:10,due_date:inDays(3),completed:false},
+    {id:"a2",title:"Dialogo con l'Ombra",description:"Scrivi una lettera alla parte di te che giudichi di piu.",level:"Livello 2",minutes:20,due_date:inDays(-1),completed:false},
+  ];
+  state.habits=[
+    {id:"h1",title:"5 minuti di respiro consapevole",note:"Al mattino, appena sveglio.",doneToday:false},
+    {id:"h2",title:"Annotare una gratitudine",note:"Prima di dormire.",doneToday:true},
+  ];
 }
 
 /* ---------- ICON SET ---------- */
@@ -370,6 +418,9 @@ const I = {
   user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 20c1-4 4.5-5 7-5s6 1 7 5"/></svg>',
   plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   spark:'<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>',
+  check:'<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.5"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.5"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>',
 };
 /* alchemical phase glyphs — 3 fasi: nero, bianco, rosso */
 const G = {
@@ -397,7 +448,7 @@ const DB = {
   async signInWith(provider){            // 'google' | 'apple'
     if(!sb){toast("Modalita demo: configura Supabase per il login");return;}
     const {error}=await sb.auth.signInWithOAuth({
-      provider, options:{redirectTo: window.location.origin + window.location.pathname}
+      provider, options:{redirectTo: window.location.href}
     });
     if(error)toast("Errore login: "+error.message);
   },
@@ -437,11 +488,89 @@ const DB = {
       interpretation:e.interp, transmutation:e.trasm, action:e.azione, keywords:e.words
     }).select().single();
     return data;
+  },
+
+  /* ---- MEETINGS (incontri) ---- */
+  async loadMeetings(){
+    if(!sb) return state.meetings;
+    const {data}=await sb.from('meetings').select('*').order('starts_at');
+    return data||[];
+  },
+  async addMeeting(m){
+    if(!sb) return;
+    const {data}=await sb.from('meetings').insert({
+      title:m.title, description:m.description, starts_at:m.starts_at,
+      duration:m.duration, location:m.location, created_by:state.uid
+    }).select().single();
+    return data;
+  },
+  async deleteMeeting(id){ if(sb) await sb.from('meetings').delete().eq('id',id); },
+
+  /* ---- ASSIGNED EXERCISES (esercizi assegnati con scadenza) ---- */
+  async loadAssigned(uid){
+    if(!sb) return state.assigned;
+    const {data}=await sb.from('assigned_exercises').select('*')
+      .or(`user_id.eq.${uid},user_id.is.null`).order('due_date');
+    return data||[];
+  },
+  async loadAllAssigned(){
+    if(!sb) return state.assigned;
+    const {data}=await sb.from('assigned_exercises').select('*').order('due_date');
+    return data||[];
+  },
+  async addAssigned(a){
+    if(!sb) return;
+    const {data}=await sb.from('assigned_exercises').insert({
+      user_id:a.user_id||null, title:a.title, description:a.description,
+      level:a.level, minutes:a.minutes, due_date:a.due_date, created_by:state.uid
+    }).select().single();
+    return data;
+  },
+  async completeAssigned(id,val){ if(sb) await sb.from('assigned_exercises').update({completed:val}).eq('id',id); },
+  async deleteAssigned(id){ if(sb) await sb.from('assigned_exercises').delete().eq('id',id); },
+
+  /* ---- HABITS (esercizi auto-creati + checkbox giornaliera) ---- */
+  async loadHabits(uid){
+    if(!sb) return state.habits;
+    const {data}=await sb.from('habit_exercises').select('*').eq('user_id',uid).eq('active',true).order('created_at');
+    const today=new Date().toISOString().slice(0,10);
+    const {data:logs}=await sb.from('habit_logs').select('*').eq('user_id',uid).eq('log_date',today);
+    const doneSet=new Set((logs||[]).filter(l=>l.done).map(l=>l.habit_id));
+    return (data||[]).map(h=>({id:h.id,title:h.title,note:h.note,doneToday:doneSet.has(h.id)}));
+  },
+  async addHabit(uid,h){
+    if(!sb) return;
+    const {data}=await sb.from('habit_exercises').insert({user_id:uid,title:h.title,note:h.note}).select().single();
+    return data;
+  },
+  async deleteHabit(id){ if(sb) await sb.from('habit_exercises').delete().eq('id',id); },
+  async toggleHabit(uid,habitId,done){
+    if(!sb) return;
+    const today=new Date().toISOString().slice(0,10);
+    await sb.from('habit_logs').upsert(
+      {habit_id:habitId,user_id:uid,log_date:today,done},
+      {onConflict:'habit_id,log_date'}
+    );
   }
 };
 function relTime(iso){
   const d=(Date.now()-new Date(iso).getTime())/86400000;
   if(d<1)return"oggi"; if(d<2)return"ieri"; return Math.floor(d)+" giorni fa";
+}
+const MESI=["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+function fmtDate(iso){ if(!iso) return"-"; const d=new Date(iso); return d.getDate()+" "+MESI[d.getMonth()]; }
+function fmtDateTime(iso){ if(!iso) return"-"; const d=new Date(iso);
+  return d.getDate()+" "+MESI[d.getMonth()]+" - "+String(d.getHours()).padStart(2,'0')+":"+String(d.getMinutes()).padStart(2,'0'); }
+function daysLeft(dateStr){ if(!dateStr) return null;
+  const due=new Date(dateStr+"T23:59:59"); const now=new Date();
+  return Math.ceil((due-now)/86400000); }
+function dueLabel(dateStr){
+  const n=daysLeft(dateStr);
+  if(n===null) return {txt:"Senza scadenza",cls:""};
+  if(n<0)  return {txt:"Scaduto - da cambiare",cls:"due-expired"};
+  if(n===0)return {txt:"Scade oggi",cls:"due-soon"};
+  if(n<=2) return {txt:"Scade tra "+n+(n===1?" giorno":" giorni"),cls:"due-soon"};
+  return {txt:"Scade il "+fmtDate(dateStr),cls:"due-ok"};
 }
 
 /* ============================ SCREENS ============================ */
@@ -556,7 +685,7 @@ function scHome(){
       <div class="eyebrow">Buongiorno</div>
       <h2 class="section" style="margin:4px 0 0">${esc(state.user.name)}</h2>
     </div>
-    <div class="avatar">${state.user.initial}</div>
+    <div class="avatar tappable" onclick="go('profilo')" title="Profilo">${state.user.initial}</div>
   </div>
   <div class="fade-seq">
     <div class="card gold">
@@ -589,34 +718,48 @@ function scHome(){
       <div class="opera-bar" style="margin-top:14px"><i style="width:${((mb?mb.phase:0)+1)/PHASES.length*100}%"></i></div>
     </div>
 
-    <div class="card">
+    ${(()=>{const ex=state.assigned.filter(a=>{const n=daysLeft(a.due_date);return n===null||n>=0;})[0];
+      if(!ex)return `<div class="card"><div class="eyebrow">Esercizio del giorno</div>
+        <p class="muted" style="margin-top:8px">Nessun esercizio attivo. Crea una pratica quotidiana nella sezione Esercizi.</p>
+        <button class="btn" style="margin-top:14px" onclick="go('esercizi')">Vai agli esercizi</button></div>`;
+      const d=dueLabel(ex.due_date);
+      return `<div class="card">
       <div class="eyebrow">Esercizio del giorno</div>
       <div style="display:flex;gap:14px;align-items:flex-start;margin-top:10px">
         <div style="color:var(--oro)">${I.flask}</div>
         <div style="flex:1">
-          <div style="font-weight:600;font-size:15.5px">Scrittura riflessiva</div>
-          <p class="muted">Annota un episodio in cui hai cercato l'approvazione altrui. Cosa temevi?</p>
-          <div class="pill-row"><span class="pill">10 min</span><span class="pill">Livello 1</span><span class="pill">Osservazione</span></div>
+          <div style="font-weight:600;font-size:15.5px">${esc(ex.title)}</div>
+          <p class="muted">${esc(ex.description||'')}</p>
+          <div class="pill-row"><span class="pill">${ex.minutes||10} min</span><span class="pill">${esc(ex.level||'Livello 1')}</span><span class="due ${d.cls}">${d.txt}</span></div>
         </div>
       </div>
-      <button class="btn" style="margin-top:14px" onclick="go('diario')">Apri nel Diario</button>
+      <button class="btn" style="margin-top:14px" onclick="go('esercizi')">Apri negli Esercizi</button></div>`;})()}
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="eyebrow">Analisi degli schemi</div>
+        <span class="linklike" onclick="go('schemi')">Apri</span>
+      </div>
+      <p class="muted" style="margin-top:8px">Emozioni ricorrenti, parole chiave e andamento dell'intensita nel tempo.</p>
     </div>
 
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div class="eyebrow">Prossimi incontri</div>
-        <span class="linklike">Vedi tutti</span>
       </div>
-      <div style="display:flex;gap:14px;align-items:center;margin-top:12px">
-        <div style="text-align:center;width:54px">
-          <div style="font-family:var(--serif);font-size:24px;color:var(--oro-soft)">24</div>
-          <div class="muted" style="font-size:11px">GIU</div>
-        </div>
-        <div style="flex:1;border-left:1px solid var(--line-soft);padding-left:14px">
-          <div style="font-weight:600">Laboratorio - L'Ombra di Jung</div>
-          <div class="muted">19:00 - Online - 90 min</div>
-        </div>
-      </div>
+      ${(()=>{const up=[...state.meetings].filter(m=>new Date(m.starts_at)>=new Date(Date.now()-86400000)).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
+        if(!up.length)return `<p class="muted" style="margin-top:10px">Nessun incontro programmato.</p>`;
+        return up.slice(0,2).map(m=>{const dt=new Date(m.starts_at);
+        return `<div style="display:flex;gap:14px;align-items:center;margin-top:12px">
+          <div style="text-align:center;width:54px">
+            <div style="font-family:var(--serif);font-size:24px;color:var(--oro-soft)">${dt.getDate()}</div>
+            <div class="muted" style="font-size:11px">${MESI[dt.getMonth()].toUpperCase()}</div>
+          </div>
+          <div style="flex:1;border-left:1px solid var(--line-soft);padding-left:14px">
+            <div style="font-weight:600">${esc(m.title)}</div>
+            <div class="muted">${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')} - ${esc(m.location||'Online')} - ${m.duration||90} min</div>
+          </div>
+        </div>`;}).join('');})()}
     </div>
   </div>`;
   return r;
@@ -862,7 +1005,255 @@ function scProfilo(){
 }
 
 /* ============================ ROUTER ============================ */
-const SCREENS={home:scHome,diario:scDiario,schemi:scSchemi,opera:scOpera,profilo:scProfilo};
+/* ----------------------------- ADMIN ----------------------------- */
+function scAdmin(){
+  const r=document.createElement('div');r.className="screen";
+  function meetingItem(m){
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:15.5px">${esc(m.title)}</div>
+          <div class="muted" style="margin-top:4px">${fmtDateTime(m.starts_at)} - ${m.duration||90} min - ${esc(m.location||'Online')}</div>
+          ${m.description?`<p class="muted" style="margin-top:6px">${esc(m.description)}</p>`:''}
+        </div>
+        <span class="del-x" data-delm="${m.id}">&times;</span>
+      </div>
+    </div>`;
+  }
+  function assignedItem(a){
+    const d=dueLabel(a.due_date);
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:15.5px">${esc(a.title)}</div>
+          ${a.description?`<p class="muted" style="margin-top:4px">${esc(a.description)}</p>`:''}
+          <div class="pill-row" style="margin-top:8px">
+            <span class="pill">${esc(a.level||'Livello 1')}</span>
+            <span class="pill">${a.minutes||10} min</span>
+            <span class="due ${d.cls}">${d.txt}</span>
+          </div>
+        </div>
+        <span class="del-x" data-dela="${a.id}">&times;</span>
+      </div>
+    </div>`;
+  }
+  r.innerHTML=`
+  <div class="hdr"><div><div class="eyebrow">Pannello</div><h2 class="section" style="margin:4px 0 0">Amministrazione</h2></div>
+    <div style="color:var(--oro)">${I.shield}</div></div>
+  <div class="fade-seq">
+    <div class="seg">
+      <div class="chip sel" data-tab="meet">Incontri</div>
+      <div class="chip" data-tab="exe">Esercizi</div>
+    </div>
+
+    <div id="ad-meet">
+      <button class="btn" id="ad-new-meet">+ Nuovo incontro</button>
+      <p class="muted" style="margin:14px 0 10px">${state.meetings.length} incontri programmati</p>
+      ${state.meetings.map(meetingItem).join('')||'<p class="muted">Nessun incontro. Creane uno.</p>'}
+    </div>
+
+    <div id="ad-exe" style="display:none">
+      <button class="btn" id="ad-new-exe">+ Nuovo esercizio</button>
+      <p class="muted" style="margin:14px 0 10px">${state.assigned.length} esercizi assegnati</p>
+      ${state.assigned.map(assignedItem).join('')||'<p class="muted">Nessun esercizio assegnato.</p>'}
+    </div>
+  </div>`;
+
+  const tabs=r.querySelectorAll('.seg .chip');
+  tabs.forEach(t=>t.onclick=()=>{
+    tabs.forEach(x=>x.classList.remove('sel'));t.classList.add('sel');
+    r.querySelector('#ad-meet').style.display=t.dataset.tab==='meet'?'':'none';
+    r.querySelector('#ad-exe').style.display=t.dataset.tab==='exe'?'':'none';
+  });
+  r.querySelector('#ad-new-meet').onclick=openMeetingForm;
+  r.querySelector('#ad-new-exe').onclick=openAssignedForm;
+  r.querySelectorAll('[data-delm]').forEach(b=>b.onclick=async()=>{
+    state.meetings=state.meetings.filter(m=>m.id!=b.dataset.delm);
+    await DB.deleteMeeting(b.dataset.delm); go('admin'); toast("Incontro eliminato");
+  });
+  r.querySelectorAll('[data-dela]').forEach(b=>b.onclick=async()=>{
+    state.assigned=state.assigned.filter(a=>a.id!=b.dataset.dela);
+    await DB.deleteAssigned(b.dataset.dela); go('admin'); toast("Esercizio eliminato");
+  });
+  return r;
+}
+
+function openMeetingForm(){
+  const ov=document.createElement('div');
+  ov.className="screen active no-pad";
+  ov.style.cssText="background:linear-gradient(180deg,var(--antracite),var(--notte-2));z-index:30;padding:0";
+  const today=new Date().toISOString().slice(0,10);
+  ov.innerHTML=`
+  <div style="padding:18px 22px 40px;height:100%;overflow-y:auto" class="fade-seq">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <h2 class="section" style="margin:0">Nuovo incontro</h2>
+      <span class="linklike" id="mf-close">Chiudi</span>
+    </div>
+    <div class="field"><label>Titolo</label><input type="text" id="mf-title" placeholder="Es. Laboratorio sull'Ombra"></div>
+    <div class="field"><label>Descrizione</label><textarea id="mf-desc" rows="2" placeholder="Di cosa si parla"></textarea></div>
+    <div class="field"><label>Data</label><input type="date" id="mf-date" value="${today}"></div>
+    <div class="field"><label>Ora</label><input type="text" id="mf-time" placeholder="19:00" value="19:00"></div>
+    <div class="field"><label>Durata (minuti)</label><input type="text" id="mf-dur" value="90"></div>
+    <div class="field"><label>Luogo</label><input type="text" id="mf-loc" value="Online"></div>
+    <button class="btn" id="mf-save">Crea incontro</button>
+  </div>`;
+  vp().appendChild(ov);
+  ov.querySelector('#mf-close').onclick=()=>ov.remove();
+  ov.querySelector('#mf-save').onclick=async()=>{
+    const title=ov.querySelector('#mf-title').value.trim();
+    if(!title){toast("Inserisci un titolo");return;}
+    const date=ov.querySelector('#mf-date').value;
+    const time=ov.querySelector('#mf-time').value.trim()||"19:00";
+    const m={title,description:ov.querySelector('#mf-desc').value.trim(),
+      starts_at:date+"T"+time, duration:+ov.querySelector('#mf-dur').value||90,
+      location:ov.querySelector('#mf-loc').value.trim()||"Online"};
+    let saved=null;
+    if(sb&&state.uid){ try{ saved=await DB.addMeeting(m);}catch(e){toast("Errore salvataggio");} }
+    state.meetings.push({id:saved?saved.id:"m"+Date.now(),...m});
+    state.meetings.sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
+    ov.remove(); go('admin'); toast("Incontro creato");
+  };
+}
+
+function openAssignedForm(){
+  const ov=document.createElement('div');
+  ov.className="screen active no-pad";
+  ov.style.cssText="background:linear-gradient(180deg,var(--antracite),var(--notte-2));z-index:30;padding:0";
+  const def=new Date();def.setDate(def.getDate()+7);
+  ov.innerHTML=`
+  <div style="padding:18px 22px 40px;height:100%;overflow-y:auto" class="fade-seq">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <h2 class="section" style="margin:0">Nuovo esercizio</h2>
+      <span class="linklike" id="ef-close">Chiudi</span>
+    </div>
+    <div class="field"><label>Titolo</label><input type="text" id="ef-title" placeholder="Es. Scrittura riflessiva"></div>
+    <div class="field"><label>Consegna <span class="hint">- cosa deve fare il viandante</span></label><textarea id="ef-desc" rows="3" placeholder="Descrivi l'esercizio"></textarea></div>
+    <div class="field"><label>Livello</label>
+      <select id="ef-level"><option>Livello 1</option><option>Livello 2</option><option>Livello 3</option></select></div>
+    <div class="field"><label>Minuti stimati</label><input type="text" id="ef-min" value="10"></div>
+    <div class="field"><label>Scadenza <span class="hint">- dopo va cambiato</span></label>
+      <input type="date" id="ef-due" value="${def.toISOString().slice(0,10)}"></div>
+    <button class="btn" id="ef-save">Assegna esercizio</button>
+  </div>`;
+  vp().appendChild(ov);
+  ov.querySelector('#ef-close').onclick=()=>ov.remove();
+  ov.querySelector('#ef-save').onclick=async()=>{
+    const title=ov.querySelector('#ef-title').value.trim();
+    if(!title){toast("Inserisci un titolo");return;}
+    const a={user_id:null, title, description:ov.querySelector('#ef-desc').value.trim(),
+      level:ov.querySelector('#ef-level').value, minutes:+ov.querySelector('#ef-min').value||10,
+      due_date:ov.querySelector('#ef-due').value, completed:false};
+    let saved=null;
+    if(sb&&state.uid){ try{ saved=await DB.addAssigned(a);}catch(e){toast("Errore salvataggio");} }
+    state.assigned.push({id:saved?saved.id:"a"+Date.now(),...a});
+    ov.remove(); go('admin'); toast("Esercizio assegnato");
+  };
+}
+
+/* ----------------------------- ESERCIZI (viandante) ----------------------------- */
+function scEsercizi(){
+  const r=document.createElement('div');r.className="screen";
+
+  function assignedCard(a){
+    const d=dueLabel(a.due_date);
+    const expired=daysLeft(a.due_date)!==null && daysLeft(a.due_date)<0;
+    return `<div class="card" style="margin-bottom:12px;${expired?'border-color:rgba(190,70,60,.4)':''}">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="color:var(--oro);margin-top:2px">${I.flask}</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:15.5px">${esc(a.title)}</div>
+          ${a.description?`<p class="muted" style="margin-top:4px">${esc(a.description)}</p>`:''}
+          <div class="pill-row" style="margin-top:10px">
+            <span class="pill">${esc(a.level||'Livello 1')}</span>
+            <span class="pill">${a.minutes||10} min</span>
+            <span class="due ${d.cls}">${d.txt}</span>
+          </div>
+          ${expired?`<p class="muted" style="margin-top:8px;color:#e79b92">Questo esercizio e scaduto: chiedi al tuo riferimento un nuovo esercizio.</p>`:''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function habitRow(h){
+    return `<div class="habit-row ${h.doneToday?'checked':''}">
+      <div class="cbx ${h.doneToday?'on':''}" data-hab="${h.id}">${I.check}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:15px">${esc(h.title)}</div>
+        ${h.note?`<p class="muted" style="margin-top:2px">${esc(h.note)}</p>`:''}
+      </div>
+      <span class="del-x" data-delh="${h.id}">&times;</span>
+    </div>`;
+  }
+
+  const active=state.assigned.filter(a=>{const n=daysLeft(a.due_date);return n===null||n>=0;});
+  const expired=state.assigned.filter(a=>{const n=daysLeft(a.due_date);return n!==null&&n<0;});
+  const doneCount=state.habits.filter(h=>h.doneToday).length;
+
+  r.innerHTML=`
+  <div class="hdr"><div><div class="eyebrow">Il tuo lavoro</div><h2 class="section" style="margin:4px 0 0">Esercizi</h2></div></div>
+  <div class="fade-seq">
+
+    <h2 class="section" style="font-size:18px">Assegnati a te</h2>
+    ${active.map(assignedCard).join('')||'<p class="muted" style="margin-bottom:8px">Nessun esercizio attivo al momento.</p>'}
+    ${expired.length?`<p class="muted" style="margin:14px 0 8px;color:#e79b92">Scaduti - da sostituire</p>${expired.map(assignedCard).join('')}`:''}
+
+    <div class="divider"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <h2 class="section" style="font-size:18px;margin:0">Pratiche quotidiane</h2>
+      <span class="muted" style="font-size:12px">${doneCount}/${state.habits.length} oggi</span>
+    </div>
+    <p class="muted" style="margin-bottom:14px">Esercizi che imposti tu. Spunta ogni giorno cosa hai svolto.</p>
+    ${state.habits.map(habitRow).join('')||'<p class="muted">Crea la tua prima pratica quotidiana.</p>'}
+    <button class="btn ghost" id="ex-new-habit" style="margin-top:8px">+ Nuova pratica quotidiana</button>
+  </div>`;
+
+  r.querySelectorAll('[data-hab]').forEach(c=>c.onclick=async()=>{
+    const h=state.habits.find(x=>x.id==c.dataset.hab);
+    h.doneToday=!h.doneToday;
+    go('esercizi');
+    toast(h.doneToday?"Pratica confermata per oggi":"Conferma rimossa");
+    if(sb&&state.uid){ try{ await DB.toggleHabit(state.uid,h.id,h.doneToday);}catch(e){} }
+  });
+  r.querySelectorAll('[data-delh]').forEach(b=>b.onclick=async()=>{
+    state.habits=state.habits.filter(h=>h.id!=b.dataset.delh);
+    await DB.deleteHabit(b.dataset.delh); go('esercizi'); toast("Pratica rimossa");
+  });
+  r.querySelector('#ex-new-habit').onclick=openHabitForm;
+  return r;
+}
+
+function openHabitForm(){
+  const ov=document.createElement('div');
+  ov.className="screen active no-pad";
+  ov.style.cssText="background:linear-gradient(180deg,var(--antracite),var(--notte-2));z-index:30;padding:0";
+  ov.innerHTML=`
+  <div style="padding:18px 22px 40px;height:100%;overflow-y:auto" class="fade-seq">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 class="section" style="margin:0">Nuova pratica</h2>
+      <span class="linklike" id="hf-close">Chiudi</span>
+    </div>
+    <p class="muted" style="margin-bottom:20px">Un esercizio che ripeti ogni giorno e confermi con un tocco.</p>
+    <div class="field"><label>Titolo</label><input type="text" id="hf-title" placeholder="Es. 5 minuti di respiro consapevole"></div>
+    <div class="field"><label>Nota <span class="hint">- quando o come</span></label><textarea id="hf-note" rows="2" placeholder="Es. Al mattino, appena sveglio"></textarea></div>
+    <button class="btn" id="hf-save">Crea pratica</button>
+  </div>`;
+  vp().appendChild(ov);
+  ov.querySelector('#hf-close').onclick=()=>ov.remove();
+  ov.querySelector('#hf-save').onclick=async()=>{
+    const title=ov.querySelector('#hf-title').value.trim();
+    if(!title){toast("Inserisci un titolo");return;}
+    const h={title, note:ov.querySelector('#hf-note').value.trim(), doneToday:false};
+    let saved=null;
+    if(sb&&state.uid){ try{ saved=await DB.addHabit(state.uid,h);}catch(e){toast("Errore salvataggio");} }
+    state.habits.push({id:saved?saved.id:"h"+Date.now(),...h});
+    ov.remove(); go('esercizi'); toast("Pratica creata");
+  };
+}
+
+/* ============================ ROUTER ============================ */
+const SCREENS={home:scHome,diario:scDiario,schemi:scSchemi,opera:scOpera,profilo:scProfilo,admin:scAdmin,esercizi:scEsercizi};
+
 let fab=null;
 function go(name){
   const v=vp();
@@ -880,7 +1271,14 @@ function go(name){
 }
 function buildNav(){
   const nav=document.getElementById('nav');
-  const items=[["home","Home",I.home],["diario","Diario",I.book],["schemi","Schemi",I.chart],["opera","Opera",I.flask],["profilo","Tu",I.user]];
+  const items=[
+    ["home","Home",I.home],
+    ["esercizi","Esercizi",I.flask],
+    ["diario","Diario",I.book],
+    ["opera","Opera",I.chart],
+    ["profilo","Tu",I.user],
+  ];
+  if(state.role==='admin') items.push(["admin","Admin",I.shield]);
   nav.innerHTML=items.map(([s,l,ic])=>`<div class="nav-item" data-s="${s}">${ic}<span>${l}</span></div>`).join('');
   nav.querySelectorAll('.nav-item').forEach(n=>n.onclick=()=>go(n.dataset.s));
   nav.style.display='flex';
@@ -925,45 +1323,38 @@ function startOnboarding(){
 }
 
 /* ============================ BOOT ============================ */
-async function loadUserData(user){
-  state.uid=user.id;
-  const prof=await DB.loadProfile(user.id);
-  if(prof){
-    state.user.name=prof.display_name||"Viandante";
-    state.user.initial=(prof.display_name||"A").trim().charAt(0).toUpperCase();
-    state.goal=prof.goal||state.goal;
-    state.dailyTime=prof.daily_time||state.dailyTime;
-    state.streak=prof.streak; state.exercisesDone=prof.exercises_done; state.minutes=prof.minutes;
-  }
-  state.blocks=await DB.loadBlocks(user.id);
-  state.entries=await DB.loadEntries(user.id);
-  if(prof && prof.onboarded && state.blocks.length){
-    state.mainBlock=state.blocks[0].name;
-    state.mainBlockId=state.blocks[0].id;
-    state.onboarded=true;
-    computeOpera(); buildNav(); go('home');
-  }else{
-    startOnboarding();
-  }
-}
-
 async function boot(){
   document.getElementById('nav').style.display='none';
-
-  // Intercetta il callback OAuth (il token arriva nell'hash dell'URL dopo il redirect)
-  if(sb){
-    sb.auth.onAuthStateChange(async (event, session)=>{
-      if((event==='SIGNED_IN' || event==='TOKEN_REFRESHED') && session && !state.uid){
-        await loadUserData(session.user);
-      }
-    });
-  }
-
-  // Controlla se c'e gia una sessione attiva
-  const user = await DB.currentUser();
+  const user = await DB.currentUser();           // null se non loggato o modalita demo
   if(user){
-    await loadUserData(user);
+    // sessione cloud attiva: carica profilo e dati
+    state.uid=user.id;
+    const prof=await DB.loadProfile(user.id);
+    if(prof){
+      state.user.name=prof.display_name||"Viandante";
+      state.user.initial=(prof.display_name||"A").trim().charAt(0).toUpperCase();
+      state.goal=prof.goal||state.goal;
+      state.dailyTime=prof.daily_time||state.dailyTime;
+      state.role=prof.role||"viandante";
+      state.streak=prof.streak; state.exercisesDone=prof.exercises_done; state.minutes=prof.minutes;
+    }
+    state.blocks=await DB.loadBlocks(user.id);
+    state.entries=await DB.loadEntries(user.id);
+    try{
+      state.meetings=await DB.loadMeetings();
+      state.assigned=state.role==='admin'?await DB.loadAllAssigned():await DB.loadAssigned(user.id);
+      state.habits=await DB.loadHabits(user.id);
+    }catch(e){ /* tabelle v2 non ancora create: resta su demo */ }
+    if(prof && prof.onboarded && state.blocks.length){
+      state.mainBlock=state.blocks[0].name;
+      state.mainBlockId=state.blocks[0].id;
+      state.onboarded=true;
+      computeOpera(); buildNav(); go('home');
+    }else{
+      startOnboarding();           // utente nuovo: deve fare l'onboarding
+    }
   }else{
+    // nessuna sessione: mostra login (o demo)
     [...vp().children].forEach(c=>c.remove());
     vp().appendChild(scLogin());
   }

@@ -23,6 +23,7 @@ exception when duplicate_object then null; end $$;
 create table if not exists public.profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
   display_name  text        not null default 'Viandante',
+  role          text        not null default 'viandante',   -- 'admin' | 'viandante'
   goal          text        default 'Crescere in consapevolezza',
   daily_time    text        default '15 min',
   streak        int         not null default 0,
