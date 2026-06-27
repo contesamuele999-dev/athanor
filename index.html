@@ -344,7 +344,14 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let sb = null;
 const cloudEnabled = SUPABASE_URL.startsWith("http") && SUPABASE_ANON_KEY.length > 20;
 if (cloudEnabled && window.supabase) {
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      flowType: "pkce",          // scambio sicuro del codice OAuth
+      detectSessionInUrl: true,  // legge il codice/token dopo il redirect di Google
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  });
 }
 
 /* mappa fasi DB <-> indice numerico usato dalla UI */
@@ -457,12 +464,13 @@ const DB = {
   async signInWith(provider){            // 'google' | 'apple'
     if(!sb){toast("Modalita demo: configura Supabase per il login");return;}
     const {error}=await sb.auth.signInWithOAuth({
-      provider, options:{redirectTo: window.location.href}
+      provider,
+      options:{ redirectTo: window.location.origin + window.location.pathname }
     });
     if(error)toast("Errore login: "+error.message);
   },
   async signOut(){ if(sb) await sb.auth.signOut(); location.reload(); },
-  async currentUser(){ if(!sb) return null; const {data}=await sb.auth.getUser(); return data.user; },
+  async currentUser(){ if(!sb) return null; const {data}=await sb.auth.getSession(); return data.session ? data.session.user : null; },
 
   async loadProfile(uid){
     const {data}=await sb.from('profiles').select('*').eq('id',uid).single();
@@ -1332,13 +1340,11 @@ function scLogin(){
     <div class="eyebrow">Laboratorio interiore</div>
     <h1 class="title" style="font-size:38px;margin-top:10px">Athanor</h1>
     <p class="lede" style="margin:14px 8px 30px">Accedi per custodire la tua Opera Alchemica nel cloud, sincronizzata su ogni dispositivo.</p>
-    <button class="btn" id="lg-google" style="margin-bottom:12px">Continua con Google</button>
-    <button class="btn ghost" id="lg-apple" style="margin-bottom:20px">Continua con Apple</button>
+    <button class="btn" id="lg-google" style="margin-bottom:20px">Continua con Google</button>
     <span class="linklike" id="lg-demo">Entra in modalita demo (senza account)</span>
     ${!cloudEnabled?'<p class="muted" style="margin-top:20px;font-size:12px">Supabase non configurato: il login usera la modalita demo finche non inserisci URL e chiave anon.</p>':''}
   </div>`;
   r.querySelector('#lg-google').onclick=()=>DB.signInWith('google');
-  r.querySelector('#lg-apple').onclick=()=>DB.signInWith('apple');
   r.querySelector('#lg-demo').onclick=()=>{ state.uid=null; startOnboarding(); };
   return r;
 }
@@ -1390,8 +1396,19 @@ async function boot(){
 function restartFull(){ if(sb) DB.signOut(); else { state.uid=null; vp().innerHTML=''; vp().appendChild(scLogin()); } }
 window.restart=restartFull;
 window.go=go;
-/* avvio applicazione */
-boot();
+
+/* avvio applicazione:
+   con Supabase aspettiamo onAuthStateChange (gestisce il redirect OAuth di Google
+   ed evita il loop di ritorno al login); senza Supabase avviamo subito. */
+if (sb) {
+  let booted = false;
+  const runBootOnce = () => { if (!booted) { booted = true; boot(); } };
+  sb.auth.onAuthStateChange((_event, _session) => { runBootOnce(); });
+  // fallback: se in 1.5s nessun evento (es. nessuna sessione), avvia comunque
+  setTimeout(runBootOnce, 1500);
+} else {
+  boot();
+}
 </script>
 </body>
 </html>
