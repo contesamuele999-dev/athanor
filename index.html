@@ -376,6 +376,7 @@ const state = {
   meetings:[],          // incontri (admin -> tutti)
   assigned:[],          // esercizi assegnati con scadenza
   habits:[],            // esercizi auto-creati {id,title,note,doneToday}
+  viandanti:[],         // elenco viandanti (solo per admin) {id,name}
 };
 
 function seed(){
@@ -406,6 +407,9 @@ function seed(){
   state.habits=[
     {id:"h1",title:"5 minuti di respiro consapevole",note:"Al mattino, appena sveglio.",doneToday:false},
     {id:"h2",title:"Annotare una gratitudine",note:"Prima di dormire.",doneToday:true},
+  ];
+  state.viandanti=[
+    {id:"u1",name:"Marco"},{id:"u2",name:"Sofia"},{id:"u3",name:"Elena"},
   ];
 }
 
@@ -528,6 +532,11 @@ const DB = {
   },
   async completeAssigned(id,val){ if(sb) await sb.from('assigned_exercises').update({completed:val}).eq('id',id); },
   async deleteAssigned(id){ if(sb) await sb.from('assigned_exercises').delete().eq('id',id); },
+  async loadViandanti(){
+    if(!sb) return state.viandanti;
+    const {data}=await sb.from('profiles').select('id,display_name').eq('role','viandante').order('display_name');
+    return (data||[]).map(p=>({id:p.id,name:p.display_name||'Viandante'}));
+  },
 
   /* ---- HABITS (esercizi auto-creati + checkbox giornaliera) ---- */
   async loadHabits(uid){
@@ -571,6 +580,12 @@ function dueLabel(dateStr){
   if(n===0)return {txt:"Scade oggi",cls:"due-soon"};
   if(n<=2) return {txt:"Scade tra "+n+(n===1?" giorno":" giorni"),cls:"due-soon"};
   return {txt:"Scade il "+fmtDate(dateStr),cls:"due-ok"};
+}
+// nome del destinatario di un esercizio assegnato (per la lista admin)
+function recipientName(uid){
+  if(!uid) return "Per tutti";
+  const v=state.viandanti.find(x=>x.id===uid);
+  return v?v.name:"Viandante";
 }
 
 /* ============================ SCREENS ============================ */
@@ -1028,6 +1043,7 @@ function scAdmin(){
           <div style="font-weight:600;font-size:15.5px">${esc(a.title)}</div>
           ${a.description?`<p class="muted" style="margin-top:4px">${esc(a.description)}</p>`:''}
           <div class="pill-row" style="margin-top:8px">
+            <span class="pill" style="border-color:var(--line);color:var(--oro-soft)">${esc(recipientName(a.user_id))}</span>
             <span class="pill">${esc(a.level||'Livello 1')}</span>
             <span class="pill">${a.minutes||10} min</span>
             <span class="due ${d.cls}">${d.txt}</span>
@@ -1127,6 +1143,11 @@ function openAssignedForm(){
       <span class="linklike" id="ef-close">Chiudi</span>
     </div>
     <div class="field"><label>Titolo</label><input type="text" id="ef-title" placeholder="Es. Scrittura riflessiva"></div>
+    <div class="field"><label>Destinatario</label>
+      <select id="ef-to">
+        <option value="">Tutti i viandanti</option>
+        ${state.viandanti.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}</option>`).join('')}
+      </select></div>
     <div class="field"><label>Consegna <span class="hint">- cosa deve fare il viandante</span></label><textarea id="ef-desc" rows="3" placeholder="Descrivi l'esercizio"></textarea></div>
     <div class="field"><label>Livello</label>
       <select id="ef-level"><option>Livello 1</option><option>Livello 2</option><option>Livello 3</option></select></div>
@@ -1140,7 +1161,7 @@ function openAssignedForm(){
   ov.querySelector('#ef-save').onclick=async()=>{
     const title=ov.querySelector('#ef-title').value.trim();
     if(!title){toast("Inserisci un titolo");return;}
-    const a={user_id:null, title, description:ov.querySelector('#ef-desc').value.trim(),
+    const a={user_id:ov.querySelector('#ef-to').value||null, title, description:ov.querySelector('#ef-desc').value.trim(),
       level:ov.querySelector('#ef-level').value, minutes:+ov.querySelector('#ef-min').value||10,
       due_date:ov.querySelector('#ef-due').value, completed:false};
     let saved=null;
@@ -1344,6 +1365,7 @@ async function boot(){
       state.meetings=await DB.loadMeetings();
       state.assigned=state.role==='admin'?await DB.loadAllAssigned():await DB.loadAssigned(user.id);
       state.habits=await DB.loadHabits(user.id);
+      if(state.role==='admin') state.viandanti=await DB.loadViandanti();
     }catch(e){ /* tabelle v2 non ancora create: resta su demo */ }
     if(prof && prof.onboarded && state.blocks.length){
       state.mainBlock=state.blocks[0].name;
